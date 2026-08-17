@@ -1,0 +1,244 @@
+
+/* ---------- LUXURY GLASS HEADER ---------- */
+header {
+    background: rgba(16, 185, 129, 0.85) !important; /* Semi-transparent green */
+    backdrop-filter: blur(12px) !important;         /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+}
+
+
+
+/* ==========================================================
+   🌟 GLOBAL THEME SETTINGS 
+   (Change these numbers and colors to redesign the app!)
+   ========================================================== */
+:root {
+    /* --- 1. BRAND COLORS --- */
+    --accent-color: #3b82f6;       /* Main Blue (Buttons, Borders, Links) */
+    --bg-light: #f0f4f8;           /* Background (Light Mode) */
+    --bg-dark: #121212;            /* Background (Dark Mode) */
+    --card-light: #ffffff;         /* Card Background (Light Mode) */
+    --card-dark: #1e1e1e;          /* Card Background (Dark Mode) */
+    --text-light: #1e293b;         /* Main Text Color (Light Mode) */
+
+    /* --- 2. SHAPES & ROUNDNESS --- */
+    --card-radius: 12px;           /* Card Rounding (0 = square, 30 = very round) */
+    --btn-radius: 8px;             /* Button Rounding */
+    --card-border: 1px;            /* Card Border Thickness (0 = none, 4 = thick) */
+    --card-shadow: 5px;            /* Card Shadow Depth (0 = flat, 20 = deep) */
+    --font-family: 'Segoe UI', Tahoma, sans-serif; /* Choose your font */
+}
+
+/* ==========================================================
+   🎨 RESET & BASE
+   ========================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: var(--font-family); 
+    padding: 10px; 
+    transition: 0.3s; 
+    background: var(--bg-light); 
+    color: var(--text-light); 
+}
+
+/* ==========================================================
+   🌙 DARK MODE OVERRIDES
+   ========================================================== */
+body.dark-mode { background: var(--bg-dark); color: #e5e5e5; }
+body.dark-mode .container { background: var(--card-dark); }
+body.dark-mode .top-bar { background: var(--card-dark); }
+body.dark-mode .home-subject { background: var(--card-dark); border-color: #444; }
+body.dark-mode .home-subject-title { color: #e5e5e5; }
+body.dark-mode .home-subject-sub { color: #94a3b8; }
+body.dark-mode .paragraph { color: #e5e5e5; }
+body.dark-mode th { background: #2a2a2a; color: #e5e5e5; }
+body.dark-mode th, body.dark-mode td { border-color: #555; color: #e5e5e5; }
+body.dark-mode .sidebar { background: var(--card-dark); }
+body.dark-mode .sidebar a { color: #e5e5e5; }
+body.dark-mode .sidebar-header { border-bottom-color: var(--accent-color); }
+
+/* ==========================================================
+   📐 MAIN LAYOUT
+   ========================================================== */
+.container { 
+    max-width: 800px; margin: auto; 
+    background: var(--card-light); 
+    border-radius: var(--card-radius); 
+    padding: 0 20px 20px; 
+    box-shadow: 0 2px var(--card-shadow) rgba(0,0,0,0.05); 
+    overflow: hidden; 
+}
+.top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-light); padding: 15px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; }
+.top-bar h1 { font-size: 20px; font-weight: 700; }
+.top-bar-actions { display: flex; gap: 12px; align-items: center; }
+.icon-btn { background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); padding: 0; }
+.back-btn { background: transparent; border: 1px solid #ccc; padding: 4px 12px; border-radius: var(--btn-radius); cursor: pointer; margin-bottom: 10px; }
+
+/* ==========================================================
+   📂 SIDEBAR
+   ========================================================== */
+.sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; display: none; }
+.sidebar-overlay.active { display: block; }
+.sidebar { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--card-light); padding: 20px; overflow-y: auto; transform: translateX(-100%); transition: 0.3s ease; z-index: 999; }
+.sidebar.open { transform: translateX(0); }
+.sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 12px; margin-bottom: 12px; }
+.sidebar-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; }
+.sidebar a { display: block; color: var(--text-light); text-decoration: none; padding: 10px 0; border-bottom: 1px solid #eee; font-weight: 500; }
+.sidebar a:hover { color: var(--accent-color); }
+
+.sidebar ul ul { border-left: 1px solid #e2e8f0; margin-left: 8px; }
+.sidebar li { list-style: none; }
+.sidebar a { display: block; padding: 8px 0; border-bottom: none !important; }
+.sidebar a:hover { padding-left: 8px; transition: 0.2s; }
+
+/* ==========================================================
+   🏠 HOME SUBJECT CARDS
+   ========================================================== */
+.home-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.search-bar { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: var(--btn-radius); margin-bottom: 16px; background: #fff; color: var(--text-light); transition: all 0.3s ease; }
+.search-bar:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.home-subject { border: var(--card-border) solid #e2e8f0; border-radius: var(--card-radius); padding: 12px; margin-bottom: 12px; background: var(--card-light); transition: all 0.3s ease; }
+.home-subject-title { font-weight: bold; margin-bottom: 4px; }
+.home-subject-sub { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.btn-view { background: var(--accent-color); color: #fff; border: none; padding: 8px 16px; border-radius: var(--btn-radius); cursor: pointer; transition: all 0.3s ease; }
+.btn-view:hover { opacity: 0.9; transform: scale(1.02); }
+
+/* ==========================================================
+   📝 CONTENT ELEMENTS
+   ========================================================== */
+.paragraph { margin: 8px 0; line-height: 1.6; }
+.paragraph + .paragraph { margin-top: 16px; } /* Space between paragraphs */
+
+.image-container { margin: 15px 0; text-align: center; }
+.image-container img { max-width: 100%; border-radius: var(--card-radius); display: block; margin: 0 auto; }
+.image-container .caption { font-size: 12px; color: #64748b; font-style: italic; margin-top: 4px; }
+
+.video-container { margin: 15px 0; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: var(--card-radius); }
+.video-container iframe, .video-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 700; }
+
+a.link-item { display: inline-block; color: var(--accent-color); text-decoration: underline; margin: 4px 0; }
+
+/* ==========================================================
+   🟦 BOXES & HIGHLIGHTS
+   ========================================================== */
+.formula-box, .example-box {
+    padding: 10px 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    line-height: 1.5;
+}
+.formula-box {
+    background: #f1f5f9;
+    border-left: 4px solid var(--accent-color);
+    text-align: center;
+    font-size: 16px;
+}
+.example-box {
+    background: #fef9e7;
+    border-left: 4px solid #f59e0b;
+    font-size: 15px;
+}
+.highlight-box { background: #fef9c3; border-left: 4px solid #f59e0b; padding: 8px; margin: 8px 0; }
+.note-box { background: #dbeafe; border-left: 4px solid var(--accent-color); padding: 8px; margin: 8px 0; }
+
+/* ==========================================================
+   📖 COLLAPSIBLE SUBTOPICS
+   ========================================================== */
+.subtopic-container {
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+.subtopic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8fafc;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid transparent;
+    transition: background 0.2s ease;
+}
+.subtopic-header:hover { background: #f1f5f9; }
+.subtopic-header .arrow {
+    transition: transform 0.3s ease;
+    font-size: 14px;
+    color: #64748b;
+}
+.subtopic-container.active .subtopic-header .arrow { transform: rotate(90deg); }
+.subtopic-body { display: none; padding: 16px; background: #ffffff; }
+.subtopic-container.active .subtopic-body { display: block; }
+
+
+/* ---------- BOUNCY CARDS (LIKE BYJU'S) ---------- */
+.home-subject {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer;
+    border: 1px solid transparent !important;
+}
+
+.home-subject:hover,
+.home-subject:active {
+    transform: translateY(-6px) scale(1.01) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12) !important;
+    border-color: var(--accent-color, #3b82f6) !important;
+}
+
+/* Smooth fade-in when the page loads */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.home-subject {
+    animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+
+/* ---------- PROGRESS RING ---------- */
+.progress-ring-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 48px;
+    height: 48px;
+    margin-left: auto;
+}
+.progress-ring {
+    transform: rotate(-90deg);
+}
+.progress-ring-circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+.progress-ring-bg {
+    stroke: #e2e8f0;
+}
+.progress-ring-fill {
+    stroke: #10b981;
+    transition: stroke-dashoffset 0.5s ease;
+}
+.progress-text {
+    position: absolute;
+    font-size: 10px;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+/* ==========================================================
+   ✍️ CUSTOM ADDITIONS BELOW HERE
+   ========================================================== */

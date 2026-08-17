@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Study Hub Viewer</title>
+
+    <!-- MathJax Engine (For rendering math formulas) -->
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <!-- Load the external style sheet -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <!-- SIDEBAR OVERLAY & NAV -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <nav class="sidebar" id="sidebarNav">
+        <div class="sidebar-header">
+            <h3>📚 Subjects</h3>
+            <button class="sidebar-close" id="closeSidebarBtn">&times;</button>
+        </div>
+        <div id="sidebarContent"></div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container" id="main-content">
+        <div class="top-bar">
+            <h1>📚 Study Hub</h1>
+            <div class="top-bar-actions">
+                <button class="icon-btn" id="darkToggleBtn">🌙</button>
+                <button class="icon-btn" id="hamburgerBtn">☰</button>
+            </div>
+        </div>
+
+        <!-- HOME VIEW (List of Subjects) -->
+        <div id="home-view">
+            <div class="home-title">📂 Subject Library</div>
+            <input type="text" class="search-bar" id="searchInput" placeholder="Search subjects..." />
+            <div id="home-subjects-container"></div>
+        </div>
+
+        <!-- NOTE VIEW (The actual subject content) -->
+        <div id="note-view" style="display:none;">
+            <button class="back-btn" onclick="goHome()">← Back</button>
+            <div id="note-content"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  JAVASCRIPT LOGIC (DO NOT EDIT)                               -->
+    <!-- ============================================================ -->
+    <script>
+        // Global data collector
+        window.subjectData = [];
+        let notesData = [];
+
+        // UI Controls
+        const sidebar = document.getElementById('sidebarNav');
+        const overlay = document.getElementById('sidebarOverlay');
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const darkToggleBtn = document.getElementById('darkToggleBtn');
+
+        hamburgerBtn.onclick = () => { sidebar.classList.add('open'); overlay.classList.add('active'); buildSidebar(); };
+        closeSidebarBtn.onclick = () => { closeSidebar(); };
+        overlay.onclick = () => { closeSidebar(); };
+        function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
+
+        // Dark Mode Logic (Saves preference to browser)
+        function applyTheme(enable) {
+            if (enable) {
+                document.body.classList.add('dark-mode');
+                darkToggleBtn.textContent = '☀️'; 
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                darkToggleBtn.textContent = '🌙';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+        darkToggleBtn.onclick = () => { applyTheme(!document.body.classList.contains('dark-mode')); };
+        if (localStorage.getItem('darkMode') === 'enabled') applyTheme(true);
+
+        // RENDERER: Converts JSON blocks into HTML
+        function renderBlock(block) {
+            switch(block.type) {
+                case 'topic': return `<h2 style="${block.style} border-bottom:2px solid var(--accent-color); padding-bottom:6px;">${block.text}</h2>`;
+                case 'subtopic': 
+    return `
+        <div class="subtopic-container active" onclick="toggleSubtopic(this)">
+            <div class="subtopic-header">
+                <span style="${block.style}">${block.text}</span>
+                <span class="arrow">▶</span>
+            </div>
+            <div class="subtopic-body">
+    `;
+    case 'subsubtopic': 
+    // If the previous block was a subtopic, we must close the body div first
+    // We will handle this via a quick global check in the renderer loop.
+    return `</div></div><h4 style="${block.style} margin-top:8px; margin-left:12px;">${block.text}</h4>`;
+                case 'paragraph': return `<p class="paragraph"><span style="${block.style}">${block.text}</span></p>`;
+                case 'formula': 
+    let fBg = block.boxBg || '#f1f5f9';
+    let fBorder = block.boxBorder || '#3b82f6';
+    return `<div class="formula-box" style="background:${fBg}; border-left-color:${fBorder};">${block.content}</div>`;
+case 'example': 
+    let eBg = block.boxBg || '#fef9e7';
+    let eBorder = block.boxBorder || '#f59e0b';
+    return `<div class="example-box" style="background:${eBg}; border-left-color:${eBorder};">${block.content}</div>`;
+                case 'list': 
+                    let items = block.items.map(i => `<li>${i}</li>`).join('');
+                    return `<ul style="margin-left:20px; margin-bottom:8px;">${items}</ul>`;
+                case 'highlight': return `<div class="highlight-box">💡 ${block.text}</div>`;
+                case 'note': return `<div class="note-box">📝 ${block.text}</div>`;
+                case 'image':
+                    return `<div class="image-container"><img src="${block.url}" alt="Image" onerror="this.style.display='none'" />${block.caption ? `<div class="caption">${block.caption}</div>` : ''}</div>`;
+                case 'video':
+                    let videoHtml = '';
+                    if (block.url.includes('youtube.com') || block.url.includes('youtu.be')) {
+                        let id = block.url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
+                        if(id) videoHtml = `<iframe src="https://www.youtube.com/embed/${id[1]}" allowfullscreen></iframe>`;
+                    } else if (block.url.includes('vimeo.com')) {
+                        let id = block.url.match(/vimeo\.com\/(\d+)/);
+                        if(id) videoHtml = `<iframe src="https://player.vimeo.com/video/${id[1]}" allowfullscreen></iframe>`;
+                    } else {
+                        videoHtml = `<video controls src="${block.url}" style="width:100%; height:auto; border-radius:8px;"></video>`;
+                    }
+                    return `<div class="video-container">${videoHtml}</div>`;
+                case 'link':
+                    return `<a href="${block.url}" target="_blank" rel="noopener noreferrer" class="link-item">🔗 ${block.text}</a>`;
+                case 'table':
+                    if (!block.data || block.data.length === 0) return '<p>Empty table</p>';
+                    let thead = `<thead><tr>${block.data[0].map(c => `<th>${c}</th>`).join('')}</tr></thead>`;
+                    let tbody = `<tbody>${block.data.slice(1).map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+                    return `<table>${thead}${tbody}</table>`;
+                default: return '';
+            }
+        }
+
+        // HOME VIEW
+        function renderHome(filter = '') {
+    const container = document.getElementById('home-subjects-container');
+    let html = '';
+    
+    notesData.forEach(subj => {
+        if (filter && !subj.title.toLowerCase().includes(filter.toLowerCase())) return;
+
+        // Build a mini Table of Contents for the home card
+        let contentPreview = '';
+        let headingIndex = 0; // <--- THIS WAS MISSING!
+
+        if (subj.content && Array.isArray(subj.content)) {
+            let foundHeaders = 0;
+            subj.content.forEach(block => {
+                // Only show first 5 headers to keep the card clean
+                if (foundHeaders >= 5) return;
+                
+                if (block.type === 'topic') {
+                    contentPreview += `<div style="font-size:12px; color:#475569; padding:2px 0; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">• ${block.text}</div>`;
+                    foundHeaders++;
+                    headingIndex++;
+                } else if (block.type === 'subtopic') {
+                    contentPreview += `<div style="font-size:12px; color:#3b82f6; padding:2px 0; padding-left:12px; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">◦ ${block.text}</div>`;
+                    foundHeaders++;
+                    headingIndex++;
+                } else if (block.type === 'subsubtopic') {
+                    contentPreview += `<div style="font-size:12px; color:#64748b; padding:2px 0; padding-left:24px; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">▪ ${block.text}</div>`;
+                    foundHeaders++;
+                    headingIndex++;
+                }
+            });
+            // If there are more than 5 headers, add a "..." indicator
+            if (subj.content.filter(b => ['topic','subtopic','subsubtopic'].includes(b.type)).length > 5) {
+                contentPreview += `<div style="font-size:11px; color:#94a3b8; padding:2px 0;">...</div>`;
+            }
+        }
+
+        html += `
+            <div class="home-subject">
+                <div class="home-subject-title">${subj.title}</div>
+                <div style="font-size:12px; color:#666; margin-bottom:6px;">${subj.topic || 'Untitled'}</div>
+                
+                <div style="margin:8px 0 12px 0; border-top:1px solid #e2e8f0; padding-top:8px;">
+                    ${contentPreview || '<div style="font-size:12px; color:#94a3b8;">No topics yet</div>'}
+                </div>
+
+                <button class="btn-view" onclick="openSubject('${subj.id}')">View Notes</button>
+            </div>
+        `;
+    });
+    container.innerHTML = html || '<p>No subjects found.</p>';
+}
+
+
+
+
+        // OPEN NOTE VIEW
+        function openSubject(id, targetId = null) {
+    const subj = notesData.find(s => s.id === id);
+    if (!subj) return;
+    
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('note-view').style.display = 'block';
+    
+    let html = `<h2 style="border-bottom:1px solid #ccc; padding-bottom:8px;">${subj.title}</h2>`;
+    
+    // We will wrap every Topic, Subtopic, and Subsubtopic with a unique ID
+    let isInsideSubtopic = false;
+    let headingIndex = 0;
+    
+    subj.content.forEach((block) => {
+        if (block.type === 'subtopic') {
+            if (isInsideSubtopic) {
+                html += `</div></div>`;
+            }
+            html += `
+                <div class="subtopic-container active" onclick="toggleSubtopic(this)">
+                    <div class="subtopic-header" id="heading-${headingIndex}">
+                        <span style="${block.style}">${block.text}</span>
+                        <span class="arrow">▶</span>
+                    </div>
+                    <div class="subtopic-body">
+            `;
+            isInsideSubtopic = true;
+            headingIndex++;
+        } 
+        else if (block.type === 'topic') {
+            // Close any open subtopic first
+            if (isInsideSubtopic) {
+                html += `</div></div>`;
+                isInsideSubtopic = false;
+            }
+            // Add a unique ID to the Topic header
+            html += `<h2 id="heading-${headingIndex}" style="${block.style} border-bottom:2px solid var(--accent-color); padding-bottom:6px;">${block.text}</h2>`;
+            headingIndex++;
+        } 
+        else if (block.type === 'subsubtopic') {
+            if (isInsideSubtopic) {
+                html += `</div></div>`;
+                isInsideSubtopic = false;
+            }
+            // Add a unique ID to the Sub-subtopic header
+            html += `<h4 id="heading-${headingIndex}" style="${block.style} margin-top:8px; margin-left:12px;">${block.text}</h4>`;
+            headingIndex++;
+        } 
+        else {
+            // Just render the block normally
+            html += renderBlock(block);
+        }
+    });
+
+    // Close any remaining subtopic
+    if (isInsideSubtopic) {
+        html += `</div></div>`;
+    }
+
+    document.getElementById('note-content').innerHTML = html;
+    
+    // Trigger MathJax
+    if (window.MathJax) MathJax.typesetPromise([document.getElementById('note-content')]);
+    
+    // Scroll to the target header if provided
+    window.scrollTo(0, 0);
+    if (targetId) {
+        setTimeout(() => {
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300); // Small delay to allow MathJax to render
+    }
+    
+    closeSidebar();
+}
+
+
+
+        function goHome() {
+            document.getElementById('note-view').style.display = 'none';
+            document.getElementById('home-view').style.display = 'block';
+        }
+
+        function buildSidebar() {
+    const container = document.getElementById('sidebarContent');
+    let html = '<ul style="list-style:none; padding:0;">';
+    
+    notesData.forEach(subj => {
+        // Start the main Subject entry
+        html += `<li style="margin-top:8px;">
+            <a href="#" onclick="openSubject('${subj.id}'); return false;" style="font-weight:bold;">📘 ${subj.title}</a>`;
+        
+        // Look for topics/subtopics inside this subject's content
+        let hasSubItems = false;
+        let subHtml = '<ul style="list-style:none; padding-left:16px; margin-top:4px; font-size:12px;">';
+        let headingIndex = 0; // <--- THIS WAS MISSING!
+        
+        if (subj.content && Array.isArray(subj.content)) {
+            subj.content.forEach(block => {
+                // If it's a Topic, add it as a sub-item
+                if (block.type === 'topic') {
+                    hasSubItems = true;
+                    subHtml += `<li style="padding:2px 0; color:#64748b; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">• ${block.text}</li>`;
+                    headingIndex++;
+                }
+                else if (block.type === 'subtopic') {
+                    hasSubItems = true;
+                    subHtml += `<li style="padding:2px 0; padding-left:8px; color:#3b82f6; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">◦ ${block.text}</li>`;
+                    headingIndex++;
+                }
+                else if (block.type === 'subsubtopic') {
+                    hasSubItems = true;
+                    subHtml += `<li style="padding:2px 0; padding-left:16px; color:#64748b; cursor:pointer;" onclick="openSubject('${subj.id}', 'heading-${headingIndex}')">▪ ${block.text}</li>`;
+                    headingIndex++;
+                }
+            });
+        }
+        
+        subHtml += '</ul>';
+        
+        // If we found topics/subtopics, add them under the subject
+        if (hasSubItems) {
+            html += subHtml;
+        }
+        
+        html += '</li>';
+    });
+    
+    html += '</ul>';
+    container.innerHTML = html || '<p style="padding:10px; color:#888;">No subjects yet.</p>';
+}
+
+
+
+        // DYNAMIC LOADER (Auto-detects data.js, data1.js, data2.js...)
+        function loadSubjects() {
+            let loadCount = 0;
+            const maxFiles = 50; // safety cap
+            function tryLoad(index) {
+                if (index >= maxFiles) {
+                    notesData = window.subjectData;
+                    renderHome();
+                    buildSidebar();
+                    return;
+                }
+                const filename = index === 0 ? 'data.js' : `data${index}.js`;
+                const script = document.createElement('script');
+                script.src = filename;
+                script.onload = function() { tryLoad(index + 1); };
+                script.onerror = function() {
+                    notesData = window.subjectData;
+                    renderHome();
+                    buildSidebar();
+                };
+                document.head.appendChild(script);
+            }
+            tryLoad(0);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function() { renderHome(this.value); });
+        document.addEventListener('DOMContentLoaded', () => { loadSubjects(); });
+        
+        // ============================================================
+//  COLLAPSIBLE SUBTOPIC TOGGLE FUNCTION
+// ============================================================
+function toggleSubtopic(element) {
+    // Close all other subtopic containers
+    const allContainers = document.querySelectorAll('.subtopic-container');
+    allContainers.forEach(container => {
+        if (container !== element.closest('.subtopic-container')) {
+            container.classList.remove('active');
+        }
+    });
+
+    // Toggle the one you clicked
+    const container = element.closest('.subtopic-container');
+    container.classList.toggle('active');
+}
+    </script>
+    
+    <!-- Floating Focus Mode Button -->
+<button id="focusModeBtn" onclick="toggleFocusMode()" 
+        style="position:fixed; bottom:24px; right:24px; 
+               background:#10b981; color:white; border:none; 
+               width:56px; height:56px; border-radius:50%; 
+               box-shadow:0 8px 24px rgba(16,185,129,0.4); 
+               font-size:24px; cursor:pointer; z-index:999;">
+    📖
+</button>
+
+<script>
+function toggleFocusMode() {
+    const container = document.querySelector('.container');
+    const body = document.body;
+    if (container.style.transform === 'scale(0.95)') {
+        container.style.transform = 'scale(1)';
+        container.style.transition = 'all 0.3s ease';
+        body.style.background = '#f0f4f8';
+    } else {
+        container.style.transform = 'scale(0.95)';
+        container.style.transition = 'all 0.3s ease';
+        body.style.background = '#0f172a';
+        container.style.boxShadow = '0 20px 60px rgba(0,0,0,0.5)';
+    }
+}
+</script>
+</body>
+</html>
